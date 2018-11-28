@@ -21,6 +21,9 @@ import kha.audio2.ogg.vorbis.Reader;
 
 import FFT;
 import BeatDetection;
+import Complex;
+import ComplexArray;
+import Filter;
 
 class Project {
 	private var pipeline: PipelineState;
@@ -64,6 +67,16 @@ class Project {
 		// var b = Assets.blobs;
 		// trace(b);
 
+		
+		// debugBeatDetection();
+		// debugffts();
+		debugfilter();
+
+		Scheduler.addTimeTask(update, 0, 1 / 60);
+		System.notifyOnFrames(render);
+	}
+
+	private function debugBeatDetection() {
 		sampleSound = Assets.sounds.KingOfTheDesert;
 		if (sampleSound != null && sampleSound.uncompressedData != null) {
 			trace("Using Sound asset.");
@@ -83,11 +96,6 @@ class Project {
 			}
 			
 		}
-		
-		// debugffts();
-
-		Scheduler.addTimeTask(update, 0, 1 / 60);
-		System.notifyOnFrames(render);
 	}
 
 	private static function debugffts(): Void {
@@ -102,6 +110,17 @@ class Project {
 		var l = testData.length;
 		trace('$t seconds for $l elements');
 		var x = results[0];
+	}
+
+	private static function debugfilter(): Void {
+		var testData = ComplexArray.zeros(16);
+		for (i in 0...testData.length) {
+			testData[i] = new Complex((i % 2) * 10.0, ((i + 1) % 2) * 10.0);
+		}
+		var kernel = Kernel.fromReal([0.5, 1.0, 0.5], true);
+		var filter = new Filter(kernel);
+		var filtered = filter.apply(testData);
+		return;
 	}
 
 	private static function uncompressOggBytes(compressedData:Bytes): kha.arrays.Float32Array {

@@ -58,4 +58,12 @@ abstract ComplexArray(Array<Complex>) {
 	public inline function clone() {
 		return new ComplexArray(getReal(), getImaginary());
 	}
+
+	public inline function multElemWise(other:ComplexArray): ComplexArray {
+		var result = zeros(this.length);
+		for (i in 0...this.length) {
+			result[i] = new Complex(this[i].re * other[i].re, this[i].im * other[i].im);
+		}
+		return result;
+	}
 }
