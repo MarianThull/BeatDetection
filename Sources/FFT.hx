@@ -1,19 +1,19 @@
 package;
 
-import Complex;
-import ComplexArray;
+import FastComplex;
+import FastComplexArray;
+import kha.arrays.Float32Array;
 
 class FFT {
 	public static var timesCalled = 0;
-	public static function fft(data:ComplexArray, inverse:Bool = false): ComplexArray {
+	public static function fft(data:FastComplexArray, inverse:Bool = false) {
 		timesCalled += 1;
 
-		var result = data.clone();
 		var n = data.length;
 
-		var wStep = new Complex(0.0, 0.0);
-		var wActual = new Complex(0.0, 0.0);
-		var tmp = new Complex(0.0, 0.0);
+		var wStep = new FastComplex(0.0, 0.0);
+		var wActual = new FastComplex(0.0, 0.0);
+		var tmp = new FastComplex(0.0, 0.0);
 		var i:Int;
 		var j:Int;
 		var k:Int;
@@ -30,14 +30,14 @@ class FFT {
 				i = j;
 				while (i < n) {
 					k = i + butterflySize;
-					tmp = result[i];
-					result[i] += result[k];
-					result[k] = tmp - result[k];
-					result[k] *= wActual;
+					tmp = data[i];
+					data[i] = FastComplex.add(data[i], data[k]);
+					data[k] = FastComplex.sub(tmp, data[k]);
+					data[k] = FastComplex.mul(data[k], wActual);
 
 					i += 2 * butterflySize;
 				}
-				wActual *= wStep;
+				wActual = FastComplex.mul(wActual, wStep);
 			}
 
 			butterflySize = Math.floor(butterflySize / 2);
@@ -47,9 +47,9 @@ class FFT {
 		j = 0;
 		for (i in 0...n) {
 			if (j > i) {
-				tmp = result[i];
-				result[i] = result[j];
-				result[j] = tmp;
+				tmp = data[i];
+				data[i] = data[j];
+				data[j] = tmp;
 			}
 			k = Math.floor(n / 2);
 			while (k >= 2 && j >= k) {
@@ -60,26 +60,25 @@ class FFT {
 		}
 
 		if (inverse) {
-			result.elementDiv(n);
+			data.elementDiv(n);
 		}
-
-		return result;
 	}
 
-	public static function ifft(data:ComplexArray): ComplexArray {
-		return fft(data, true);
+	public static function ifft(data:FastComplexArray) {
+		fft(data, true);
 	}
 
-	public static function realfft(reData:Array<Float>, inverse:Bool = false): Array<Float> {
-		var im = new Array<Float>();
-		for (i in 0...reData.length) {
-			im.push(0);
+	public static function realfft(reData:Float32Array, inverse:Bool = false): Float32Array {
+		var im = new Float32Array(reData.get_length());
+		for (i in 0...reData.get_length()) {
+			im[i] = 0;
 		}
-		var data = new ComplexArray(reData, im);
-		return fft(data, inverse).getReal();
+		var data = new FastComplexArray(reData, im);
+		fft(data, inverse);
+		return data.getReal();
 	}
 
-	public static function realifft(reData:Array<Float>): Array<Float> {
+	public static function realifft(reData:Float32Array): Float32Array {
 		return realfft(reData, true);
 	}
 }

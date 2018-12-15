@@ -1,8 +1,9 @@
 package;
 
-import Complex;
-import ComplexArray;
+import FastComplex;
+import FastComplexArray;
 import FFT;
+import kha.arrays.Float32Array;
 
 class Filter {
 	private var kernel: Kernel;
@@ -16,42 +17,46 @@ class Filter {
 		kernel_spectrum = kernel.get_spectrum(data_length);
 	}
 
-	public function apply(data:ComplexArray) {
+	public function apply(data:FastComplexArray) {
 		if (kernel_spectrum == null || kernel_spectrum.length != data.length) {
 			prep_freq_domain(data.length);
 		}
-		var data_freq = FFT.fft(data);
-		var results_freq = data_freq.multElemWise(kernel_spectrum);
-		return FFT.ifft(results_freq);
+		FFT.fft(data);
+		data.multElemWise(kernel_spectrum);
+		FFT.ifft(data);
 	}
 }
 
 
 @:forward(length)
-abstract Kernel(ComplexArray) from ComplexArray to ComplexArray {
-	public function new(k: ComplexArray) {
+abstract Kernel(FastComplexArray) from FastComplexArray to FastComplexArray {
+	public function new(k: FastComplexArray) {
 		this = k;
 	}
 
-	public static function fromReal(k: Array<Float>, normalize=false) {
+	public static function fromReal(k: Float32Array, normalize=false) {
 		if (normalize) {
 			normalizeReal(k);
 		}
-		return new Kernel(new ComplexArray(k, k.copy()));
+		var k_copy = new Float32Array(k.get_length());
+		for (i in 0...k.get_length) {
+			k_copy[i] = k[i];
+		}
+		return new Kernel(new ComplexArray(k, k_copy));
 	}
 
-	public static function normalizeReal(data: Array<Float>) {
+	public static function normalizeReal(data: Float32Array) {
 		var s = 0.0;
-		for (i in 0...data.length) {
+		for (i in 0...data.get_length()) {
 			s += data[i];
 		}
-		for (i in 0...data.length) {
+		for (i in 0...data.get_length()) {
 			data[i] /= s;
 		}
 	}
 
 	public inline function padded_copy(pad_to:Int) {
-		var zeros = ComplexArray.zeros(pad_to);
+		var zeros = FastComplexArray.zeros(pad_to);
 		for (i in 0...Math.floor(Math.min(this.length, pad_to))) {
 			zeros[i] = this[i];
 		}
@@ -60,15 +65,16 @@ abstract Kernel(ComplexArray) from ComplexArray to ComplexArray {
 
 	public inline function get_spectrum(pad_to:Int) {
 		var padded = padded_copy(pad_to);
-		return FFT.fft(padded);
+		FFT.fft(padded);
+		return padded;
 	}
 
 	public static function hann_window_right(win_length:Float, max_freq:Int = 4096): Kernel {
 		var hann_length = Math.ceil(win_length * 2 * max_freq); // for sampling theorem
-		var hann = ComplexArray.zeros(hann_length);
+		var hann = FastComplexArray.zeros(hann_length);
 		for (i in 0...hann_length) {
 			var h = Math.pow(Math.cos(i * Math.PI / (hann_length / 2)), 2);
-			hann[i] = new Complex(h, h);
+			hann[i] = new FastComplex(h, h);
 		}
 		return hann;
 	}
