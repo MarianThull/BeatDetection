@@ -66,4 +66,23 @@ abstract ComplexArray(Array<Complex>) {
 		}
 		return result;
 	}
+
+	public inline function fullWaveRectify() {
+		for (i in 0...this.length) {
+			this[i].re = Math.abs(this[i].re);
+			this[i].im = Math.abs(this[i].im);
+		}
+	}
+
+	public inline function diff_rect() {
+		// differentiate in half wave rectify in one step
+		var result = zeros(this.length);
+		for (i in 1...this.length) {
+			var delta_re = this[i].re - this[i - 1].re;
+			var delta_im = this[i].im - this[i - 1].im;
+			result[i] = new Complex(Math.max(0, delta_re), Math.max(0, delta_im));
+		}
+
+		return result;
+	}
 }

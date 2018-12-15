@@ -1,6 +1,7 @@
 package;
 
 import FFT;
+import Filter;
 import ComplexArray;
 import kha.Assets;
 import kha.Sound;
@@ -97,11 +98,23 @@ class BeatDetection {
 	}
 
 	private function smoothing(bands:Array<ComplexArray>): Array<ComplexArray> {
-		return new Array<ComplexArray>();
+		var smoothed_bands = new Array<ComplexArray>();
+		var hann = Kernel.hann_window_right(0.4);
+		var hann_filter = new Filter(hann);
+		for (band in bands) {
+			band.fullWaveRectify();
+			smoothed_bands.push(hann_filter.apply(band));
+		}
+
+		return smoothed_bands;
 	}
 
 	private function differentiate(bands:Array<ComplexArray>): Array<ComplexArray> {
-		return new Array<ComplexArray>();
+		var differentiated = new Array<ComplexArray>();
+		for (band in bands) {
+			differentiated.push(band.diff_rect());
+		}
+		return differentiated;
 	}
 
 	private function combFilter(bands:Array<ComplexArray>): Float {

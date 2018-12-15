@@ -62,4 +62,14 @@ abstract Kernel(ComplexArray) from ComplexArray to ComplexArray {
 		var padded = padded_copy(pad_to);
 		return FFT.fft(padded);
 	}
+
+	public static function hann_window_right(win_length:Float, max_freq:Int = 4096): Kernel {
+		var hann_length = Math.ceil(win_length * 2 * max_freq); // for sampling theorem
+		var hann = ComplexArray.zeros(hann_length);
+		for (i in 0...hann_length) {
+			var h = Math.pow(Math.cos(i * Math.PI / (hann_length / 2)), 2);
+			hann[i] = new Complex(h, h);
+		}
+		return hann;
+	}
 }

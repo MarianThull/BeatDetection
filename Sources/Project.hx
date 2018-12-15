@@ -68,9 +68,9 @@ class Project {
 		// trace(b);
 
 		
-		// debugBeatDetection();
+		debugBeatDetection();
 		// debugffts();
-		debugfilter();
+		// debugfilter();
 
 		Scheduler.addTimeTask(update, 0, 1 / 60);
 		System.notifyOnFrames(render);
@@ -118,7 +118,10 @@ class Project {
 			testData[i] = new Complex((i % 2) * 10.0, ((i + 1) % 2) * 10.0);
 		}
 		var kernel = Kernel.fromReal([0.5, 1.0, 0.5], true);
+		var kernel2 = Kernel.hann_window_right(0.4);
 		var filter = new Filter(kernel);
+		var filter2 = new Filter(kernel2);
+		filter2.prep_freq_domain(8192);
 		var filtered = filter.apply(testData);
 		return;
 	}
