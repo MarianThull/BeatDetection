@@ -6,12 +6,13 @@ import ComplexArray;
 import kha.Assets;
 import kha.Sound;
 import kha.Scheduler;
+import kha.arrays.Float32Array;
 
 class BeatDetection {
 	private var bpm: Float;
-	private var data: kha.arrays.Float32Array;
+	private var data: Float32Array;
 	private var samplerate = 44100;
-	private var samplesizeSeconds = 1.0; // 2.2;
+	private var samplesizeSeconds = 2.2;
 	private var sampleSize: Int;
 	private var numBands = 6;
 
@@ -19,7 +20,7 @@ class BeatDetection {
 	private static var time0 = 0.0;
 	private static var ffts0 = 0;
 
-	public function new(data:kha.arrays.Float32Array): Void {
+	public function new(data:Float32Array): Void {
 		this.data = data;
 		sampleSize = Math.floor(Math.pow(2, Math.ceil(Math.log(samplesizeSeconds * samplerate) / Math.log(2))));
 		debug('sample size: $sampleSize');
@@ -28,9 +29,9 @@ class BeatDetection {
 		debug(timer("extract sample"));
 		var bands = filterbank(sample);
 		debug(timer("filterbank"));
-		bands = smoothing(bands);
+		smoothing(bands);
 		debug(timer("smoothing"));
-		bands = differentiate(bands);
+		differentiate(bands);
 		debug(timer("differentiate"));
 		bpm = combFilter(bands);
 		debug(timer("comb filter"));
@@ -53,32 +54,34 @@ class BeatDetection {
 		}
 	}
 
-	private function getSample(): ComplexArray {
+	private function getSample(): FastComplexArray {
 		if (data != null) {
-			var left = new Array<Float>();
-			var right = new Array<Float>();
+			var left = new Float32Array(sampleSize);
+			var right = new Float32Array(sampleSize);
 
 			var l = data.length;
 			debug('file length: $l');
-			var i = Math.floor(l / 2) - sampleSize; // half sampleSize but x2 for stereo
-			while (left.length < sampleSize) {
-				left.push(data[i]);
-				right.push(data[i + 1]);
+			var start_i = Math.floor(l / 2) - sampleSize; // half sampleSize but x2 for stereo
+			var n = 0;
+			for (i in start_i...(start_i + sampleSize)) {
+				left[n] = data[i];
+				right[n] = data[i + 1];
 				i += 2;
+				n += 1;
 			}
 
-			return new ComplexArray(left, right);
+			return new FastComplexArray(left, right);
 		}
 		else {
-			return ComplexArray.zeros(sampleSize);
+			return FastComplexArray.zeros(sampleSize);
 		}
 	}
 
-	private function filterbank(sample:ComplexArray): Array<ComplexArray> {
-		var bands = new Array<ComplexArray>();
-		var empty = ComplexArray.zeros(sampleSize);
-		var freq_domain = FFT.fft(sample);
+	private function filterbank(sample:FastComplexArray): Array<FastComplexArray> {
+		var bands = new Array<FastComplexArray>();
+		var empty = FastComplexArray.zeros(sampleSize);
 		var log_step = Math.log(sampleSize) / numBands;
+		FFT.fft(sample);
 
 		var lower_index = 0;
 		var upper_index = 0;
@@ -87,9 +90,10 @@ class BeatDetection {
 
 			var band = empty.clone();
 			for (j in lower_index...upper_index) {
-				band[j] = freq_domain[j];
+				band[j] = sample[j];
 			}
-			bands.push(FFT.ifft(band));
+			FFT.ifft(band);
+			bands.push(band);
 
 			lower_index = upper_index;
 		}
@@ -97,27 +101,21 @@ class BeatDetection {
 		return bands;
 	}
 
-	private function smoothing(bands:Array<ComplexArray>): Array<ComplexArray> {
-		var smoothed_bands = new Array<ComplexArray>();
-		var hann = Kernel.hann_window_right(0.4);
-		var hann_filter = new Filter(hann);
+	private function smoothing(bands:Array<FastComplexArray>) {
+		var hann_filter = Filter.hann_window_right(0.4, samplerate);
 		for (band in bands) {
 			band.fullWaveRectify();
-			smoothed_bands.push(hann_filter.apply(band));
+			hann_filter.apply(band);
 		}
-
-		return smoothed_bands;
 	}
 
-	private function differentiate(bands:Array<ComplexArray>): Array<ComplexArray> {
-		var differentiated = new Array<ComplexArray>();
+	private function differentiate(bands:Array<FastComplexArray>) {
 		for (band in bands) {
-			differentiated.push(band.diff_rect());
+			band.diff_rect();
 		}
-		return differentiated;
 	}
 
-	private function combFilter(bands:Array<ComplexArray>): Float {
+	private function combFilter(bands:Array<FastComplexArray>): Float {
 		return 0;
 	}
 }

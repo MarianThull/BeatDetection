@@ -25,6 +25,11 @@ class Filter {
 		data.multElemWise(kernel_spectrum);
 		FFT.ifft(data);
 	}
+
+	public static function hann_window_right(win_length:Float, max_freq:Int = 44100): Filter {
+		var kernel = Kernel.hann_window_right(win_length, max_freq);
+		return new Filter(kernel);
+	}
 }
 
 
@@ -38,19 +43,19 @@ abstract Kernel(FastComplexArray) from FastComplexArray to FastComplexArray {
 		if (normalize) {
 			normalizeReal(k);
 		}
-		var k_copy = new Float32Array(k.get_length());
-		for (i in 0...k.get_length) {
+		var k_copy = new Float32Array(k.length);
+		for (i in 0...k.length) {
 			k_copy[i] = k[i];
 		}
-		return new Kernel(new ComplexArray(k, k_copy));
+		return new Kernel(new FastComplexArray(k, k_copy));
 	}
 
 	public static function normalizeReal(data: Float32Array) {
 		var s = 0.0;
-		for (i in 0...data.get_length()) {
+		for (i in 0...data.length) {
 			s += data[i];
 		}
-		for (i in 0...data.get_length()) {
+		for (i in 0...data.length) {
 			data[i] /= s;
 		}
 	}
@@ -69,13 +74,17 @@ abstract Kernel(FastComplexArray) from FastComplexArray to FastComplexArray {
 		return padded;
 	}
 
-	public static function hann_window_right(win_length:Float, max_freq:Int = 4096): Kernel {
-		var hann_length = Math.ceil(win_length * 2 * max_freq); // for sampling theorem
+	public static function hann_window_right(win_length:Float, max_freq:Int = 44100): Kernel {
+		var hann_length = Math.ceil(win_length * max_freq); // for sampling theorem
 		var hann = FastComplexArray.zeros(hann_length);
 		for (i in 0...hann_length) {
-			var h = Math.pow(Math.cos(i * Math.PI / (hann_length / 2)), 2);
+			var h = Math.pow(Math.cos(i * Math.PI / (hann_length * 2), 2);
 			hann[i] = new FastComplex(h, h);
 		}
 		return hann;
+	}
+
+	public static function comb_kernel(): Kernel {
+		return FastComplexArray.zeros(1);
 	}
 }

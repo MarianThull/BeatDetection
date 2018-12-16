@@ -69,8 +69,8 @@ class FFT {
 	}
 
 	public static function realfft(reData:Float32Array, inverse:Bool = false): Float32Array {
-		var im = new Float32Array(reData.get_length());
-		for (i in 0...reData.get_length()) {
+		var im = new Float32Array(reData.length);
+		for (i in 0...reData.length) {
 			im[i] = 0;
 		}
 		var data = new FastComplexArray(reData, im);

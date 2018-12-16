@@ -6,10 +6,10 @@ import kha.FastFloat;
 
 
 abstract FastComplexArray(Array<Float32Array>) {
-	public var length(get, null): Int;
+	public var length(get, never): Int;
 
 	public inline function get_length(): Int {
-		return this[0].get_length();
+		return this[0].length;
 	} 
 
 	public inline function new(re:Float32Array, im:Float32Array) {
@@ -66,35 +66,32 @@ abstract FastComplexArray(Array<Float32Array>) {
 	}
 
 	public inline function multElemWise(other:FastComplexArray) {
+		var other_i: FastComplex;
 		for (i in 0...length) {
-			this[0][i] *= other[0][i];
-			this[1][i] *= other[1][i];
+			other_i = other[i];
+			this[0][i] *= other_i.re;
+			this[1][i] *= other_i.im;
 		}
 	}
 
 	public inline function fullWaveRectify() {
-		for (i in 0...this.length) {
+		for (i in 0...length) {
 			this[0][i] = Math.abs(this[0][i]);
 			this[1][i] = Math.abs(this[1][i]);
 		}
 	}
 
-	public inline function diff_rect(): FastComplexArray {
-		// differentiate in half wave rectify in one step
+	public inline function diff_rect() {
+		// differentiate and half wave rectify in one step
 		var result = zeros(length);
 		var delta_re: FastFloat;
 		var delta_im: FastFloat;
 		for (i in 1...length) {
 			delta_re = this[0][i] - this[0][i - 1];
-			delta_re = this[0][i] - this[0][i - 1];
-			if (delta_re > 0) {
-				this[0][i] = delta_re;
-			}
-			if (delta_im > 0) {
-				this[1][i] = delta_im;
-			}
+			delta_im = this[1][i] - this[1][i - 1];
+			result[i] = new FastComplex(Math.max(0, delta_re), Math.max(0, delta_im));
 		}
-
-		return result;
+		this[0] = result.getReal();
+		this[1] = result.getImaginary();
 	}
 }

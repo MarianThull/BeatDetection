@@ -3,6 +3,7 @@ package;
 import kha.Assets;
 import kha.Color;
 import kha.Framebuffer;
+import kha.arrays.Float32Array;
 import kha.graphics4.ConstantLocation;
 import kha.graphics4.IndexBuffer;
 import kha.graphics4.PipelineState;
@@ -91,7 +92,7 @@ class Project {
 			}
 			else {
 				trace("Using dummie data.");
-				var data = new kha.arrays.Float32Array(20 * 44100);
+				var data = new Float32Array(20 * 44100);
 				beatDetection = new BeatDetection(data);
 			}
 			
@@ -100,48 +101,52 @@ class Project {
 
 	private static function debugffts(): Void {
 		// test fft
-		var testData = new Array<Float>();
-		for (i in 0...1024) {
-			testData.push(i % 2 == 0 ? -1.0 : 1.0);
+		var testData = new Float32Array(8);
+		for (i in 0...8) {
+			testData[i] = (i == 1 ? 1.0 : 0.0);
 		}
 		var t0 = Scheduler.realTime();
-		var results = FFT.realfft(testData, false);
+		FFT.realfft(testData, false);
 		var t = Scheduler.realTime() - t0;
 		var l = testData.length;
 		trace('$t seconds for $l elements');
-		var x = results[0];
+		var x = testData[0];
 	}
 
 	private static function debugfilter(): Void {
-		var testData = ComplexArray.zeros(16);
+		var testData = FastComplexArray.zeros(16);
 		for (i in 0...testData.length) {
-			testData[i] = new Complex((i % 2) * 10.0, ((i + 1) % 2) * 10.0);
+			testData[i] = new FastComplex((i % 2) * 10.0, ((i + 1) % 2) * 10.0);
 		}
-		var kernel = Kernel.fromReal([0.5, 1.0, 0.5], true);
+		var example = new Float32Array(3);
+		example[0] = 0.5;
+		example[1] = 1.0;
+		example[2] = 0.5;
+		var kernel = Kernel.fromReal(example, true);
 		var kernel2 = Kernel.hann_window_right(0.4);
 		var filter = new Filter(kernel);
 		var filter2 = new Filter(kernel2);
 		filter2.prep_freq_domain(8192);
-		var filtered = filter.apply(testData);
+		filter.apply(testData);
 		return;
 	}
 
 	private static function uncompressOggBytes(compressedData:Bytes): kha.arrays.Float32Array {
-		var uncompressedData: kha.arrays.Float32Array;
+		var uncompressedData: Float32Array;
 
 		var output = new BytesOutput();
 		var header = Reader.readAll(compressedData, output, true);
 		var soundBytes = output.getBytes();
 		var count = Std.int(soundBytes.length / 4);
 		if (header.channel == 1) {
-			uncompressedData = new kha.arrays.Float32Array(count * 2);
+			uncompressedData = new Float32Array(count * 2);
 			for (i in 0...count) {
 				uncompressedData[i * 2 + 0] = soundBytes.getFloat(i * 4);
 				uncompressedData[i * 2 + 1] = soundBytes.getFloat(i * 4);
 			}
 		}
 		else {
-			uncompressedData = new kha.arrays.Float32Array(count);
+			uncompressedData = new Float32Array(count);
 			for (i in 0...count) {
 				uncompressedData[i] = soundBytes.getFloat(i * 4);
 			}
