@@ -3,6 +3,7 @@ package;
 import kha.Assets;
 import kha.Color;
 import kha.Framebuffer;
+import kha.arrays.Float32Array;
 import kha.graphics4.ConstantLocation;
 import kha.graphics4.IndexBuffer;
 import kha.graphics4.PipelineState;

@@ -30,10 +30,10 @@ class FFT {
 				i = j;
 				while (i < n) {
 					k = i + butterflySize;
-					tmp = data[i];
-					data[i] = FastComplex.add(data[i], data[k]);
-					data[k] = FastComplex.sub(tmp, data[k]);
-					data[k] = FastComplex.mul(data[k], wActual);
+					tmp = data.get(i);
+					data.set(i, FastComplex.add(data.get(i), data.get(k)));
+					data.set(k, FastComplex.sub(tmp, data.get(k)));
+					data.set(k, FastComplex.mul(data.get(k), wActual));
 
 					i += 2 * butterflySize;
 				}
@@ -47,9 +47,9 @@ class FFT {
 		j = 0;
 		for (i in 0...n) {
 			if (j > i) {
-				tmp = data[i];
-				data[i] = data[j];
-				data[j] = tmp;
+				tmp = data.get(i);
+				data.set(i, data.get(j));
+				data.set(j, tmp);
 			}
 			k = Math.floor(n / 2);
 			while (k >= 2 && j >= k) {
@@ -69,13 +69,13 @@ class FFT {
 	}
 
 	public static function realfft(reData:Float32Array, inverse:Bool = false): Float32Array {
-		var im = new Float32Array(reData.get_length());
-		for (i in 0...reData.get_length()) {
+		var im = new Float32Array(reData.length);
+		for (i in 0...reData.length) {
 			im[i] = 0;
 		}
 		var data = new FastComplexArray(reData, im);
 		fft(data, inverse);
-		return data.getReal();
+		return data.re;
 	}
 
 	public static function realifft(reData:Float32Array): Float32Array {

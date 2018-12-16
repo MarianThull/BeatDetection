@@ -28,44 +28,50 @@ class Filter {
 }
 
 
-@:forward(length)
-abstract Kernel(FastComplexArray) from FastComplexArray to FastComplexArray {
+class Kernel {
+	public var kernel: FastComplexArray;
+	public var length(get, never): Int;
+
 	public function new(k: FastComplexArray) {
-		this = k;
+		kernel = k;
 	}
+
+	public function get_length(): Int {
+		return kernel.length;
+	} 
 
 	public static function fromReal(k: Float32Array, normalize=false) {
 		if (normalize) {
 			normalizeReal(k);
 		}
-		var k_copy = new Float32Array(k.get_length());
-		for (i in 0...k.get_length) {
+		var k_copy = new Float32Array(k.length);
+		for (i in 0...k.length) {
 			k_copy[i] = k[i];
 		}
-		return new Kernel(new ComplexArray(k, k_copy));
+		return new Kernel(new FastComplexArray(k, k_copy));
 	}
 
 	public static function normalizeReal(data: Float32Array) {
 		var s = 0.0;
-		for (i in 0...data.get_length()) {
+		for (i in 0...data.length) {
 			s += data[i];
 		}
-		for (i in 0...data.get_length()) {
+		for (i in 0...data.length) {
 			data[i] /= s;
 		}
 	}
 
-	public inline function padded_copy(pad_to:Int) {
+	public function padded_copy(pad_to:Int) {
 		var zeros = FastComplexArray.zeros(pad_to);
-		for (i in 0...Math.floor(Math.min(this.length, pad_to))) {
-			zeros[i] = this[i];
+		for (i in 0...Math.floor(Math.min(kernel.length, pad_to))) {
+			zeros.set(i, kernel.get(i));
 		}
-		return zeros;
+		return new Kernel(zeros);
 	}
 
-	public inline function get_spectrum(pad_to:Int) {
+	public function get_spectrum(pad_to:Int) {
 		var padded = padded_copy(pad_to);
-		FFT.fft(padded);
+		FFT.fft(padded.kernel);
 		return padded;
 	}
 
@@ -74,8 +80,8 @@ abstract Kernel(FastComplexArray) from FastComplexArray to FastComplexArray {
 		var hann = FastComplexArray.zeros(hann_length);
 		for (i in 0...hann_length) {
 			var h = Math.pow(Math.cos(i * Math.PI / (hann_length / 2)), 2);
-			hann[i] = new FastComplex(h, h);
+			hann.set(i, new FastComplex(h, h));
 		}
-		return hann;
+		return new Kernel(hann);
 	}
 }
