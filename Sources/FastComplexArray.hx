@@ -94,4 +94,12 @@ abstract FastComplexArray(Array<Float32Array>) {
 		this[0] = result.getReal();
 		this[1] = result.getImaginary();
 	}
+
+	public inline function energy() {
+		var e: Float = 0;
+		for (i in 0...length) {
+			e += Math.pow(this[0][i], 2) + Math.pow(this[1][i], 2);
+		}
+		return e;
+	}
 }

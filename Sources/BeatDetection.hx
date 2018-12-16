@@ -14,7 +14,10 @@ class BeatDetection {
 	private var samplerate = 44100;
 	private var samplesizeSeconds = 2.2;
 	private var sampleSize: Int;
-	private var numBands = 6;
+	private var bandLimits = [0, 200, 400, 800, 1600, 3200];
+	private var minBPM: Float = 60;
+	private var maxBPM: Float = 240;
+	private var accuracies = [2]; // [2, 0.5, 0.1, 0.01];
 
 	private static var DEBUG = true;
 	private static var time0 = 0.0;
@@ -35,6 +38,8 @@ class BeatDetection {
 		debug(timer("differentiate"));
 		bpm = combFilter(bands);
 		debug(timer("comb filter"));
+		debug('found bpm: $bpm');
+		return;
 	}
 
 	private static function timer(name:String): String {
@@ -80,22 +85,21 @@ class BeatDetection {
 	private function filterbank(sample:FastComplexArray): Array<FastComplexArray> {
 		var bands = new Array<FastComplexArray>();
 		var empty = FastComplexArray.zeros(sampleSize);
-		var log_step = Math.log(sampleSize) / numBands;
 		FFT.fft(sample);
 
-		var lower_index = 0;
-		var upper_index = 0;
-		for (i in 0...numBands) {
-			upper_index = Math.floor(Math.exp((i + 1) * log_step));
+		var indices = new Array<Int>();
+		for (limit in bandLimits) {
+			indices.push(Math.floor(limit * sampleSize / samplerate));
+		}
+		indices.push(sampleSize);
 
+		for (i in 0...bandLimits.length) {
 			var band = empty.clone();
-			for (j in lower_index...upper_index) {
+			for (j in indices[i]...indices[i + 1]) {
 				band[j] = sample[j];
 			}
 			FFT.ifft(band);
 			bands.push(band);
-
-			lower_index = upper_index;
 		}
 
 		return bands;
@@ -116,6 +120,48 @@ class BeatDetection {
 	}
 
 	private function combFilter(bands:Array<FastComplexArray>): Float {
-		return 0;
+		for (band in bands) {
+			FFT.fft(band);
+		}
+
+		var lowerBPM = minBPM;
+		var upperBPM = maxBPM;
+		var estBPM:Float = 0;
+
+		for (accuracy in accuracies) {
+			estBPM = combFilterRound(bands, accuracy, lowerBPM, upperBPM);
+			lowerBPM = estBPM - accuracy;
+			upperBPM = estBPM + accuracy;
+		}
+
+		return estBPM;
+	}
+
+	private function combFilterRound(freq_bands:Array<FastComplexArray>, accuracy:Float, startBPM:Float, stopBPM:Float): Float {
+		var max_energy: Float = 0;
+		var bestBPM: Float = minBPM;  // prevent errors for constant signals
+		var curBPM: Float = 0;
+		var energy: Float = 0;
+		var filter: Filter;
+		var band_copy: FastComplexArray;
+
+		for (i in 0...Math.ceil((stopBPM - startBPM) / accuracy) + 1) {
+			curBPM = startBPM + i * accuracy;
+			energy = 0;
+			filter = Filter.comb_filter(curBPM, samplerate);
+			for (band in freq_bands) {
+				band_copy = band.clone();
+				filter.apply_on_freq(band_copy);
+				FFT.ifft(band_copy);
+				energy += band_copy.energy();
+			}
+
+			if (energy > max_energy) {
+				bestBPM = curBPM;
+				max_energy = energy;
+			}
+		}
+
+		return bestBPM;
 	}
 }

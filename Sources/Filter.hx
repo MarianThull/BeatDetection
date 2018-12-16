@@ -26,8 +26,20 @@ class Filter {
 		FFT.ifft(data);
 	}
 
+	public function apply_on_freq(freq_data:FastComplexArray) {
+		if (kernel_spectrum == null || kernel_spectrum.length != freq_data.length) {
+			prep_freq_domain(freq_data.length);
+		}
+		freq_data.multElemWise(kernel_spectrum);
+	}
+
 	public static function hann_window_right(win_length:Float, max_freq:Int = 44100): Filter {
 		var kernel = Kernel.hann_window_right(win_length, max_freq);
+		return new Filter(kernel);
+	}
+
+	public static function comb_filter(bpm:Float, samplerate:Int, pulses:Int=3): Filter {
+		var kernel = Kernel.comb_kernel(bpm, samplerate, pulses);
 		return new Filter(kernel);
 	}
 }
@@ -78,13 +90,20 @@ abstract Kernel(FastComplexArray) from FastComplexArray to FastComplexArray {
 		var hann_length = Math.ceil(win_length * max_freq); // for sampling theorem
 		var hann = FastComplexArray.zeros(hann_length);
 		for (i in 0...hann_length) {
-			var h = Math.pow(Math.cos(i * Math.PI / (hann_length * 2), 2);
+			var h = Math.pow(Math.cos(i * Math.PI / (hann_length * 2)), 2);
 			hann[i] = new FastComplex(h, h);
 		}
 		return hann;
 	}
 
-	public static function comb_kernel(): Kernel {
-		return FastComplexArray.zeros(1);
+	public static function comb_kernel(bpm:Float, samplerate:Int, pulses:Int=3): Kernel {
+		var step = Math.floor(60 * samplerate / bpm);
+		var k = new Float32Array(step * pulses);
+
+		for (i in 0...pulses) {
+			k[i * step] = 1;
+		}
+
+		return Kernel.fromReal(k);
 	}
 }
