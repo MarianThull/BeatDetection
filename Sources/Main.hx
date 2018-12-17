@@ -6,7 +6,7 @@ import Project;
 
 class Main {
 	public static function main(): Void {
-		System.start({title: "Shader", width: 640, height: 480}, function (_) {
+		System.start({title: "Shader", width: 1280, height: 720}, function (_) {
 			var project = new Project();
 		});
 	}

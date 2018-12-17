@@ -62,42 +62,41 @@ class Project {
 		indices.unlock();
 		
 		Assets.loadEverything(function():Void {
+			// var s = Assets.sounds;
+			// var b = Assets.blobs;
+			// trace(b);
+
+			
+			debugBeatDetection();
+			// debugffts();
+			// debugfilter();
+
+			Scheduler.addTimeTask(update, 0, 1 / 60);
+			System.notifyOnFrames(render);
 		});
-
-		// var s = Assets.sounds;
-		// var b = Assets.blobs;
-		// trace(b);
-
-		
-		debugBeatDetection();
-		// debugffts();
-		// debugfilter();
-
-		Scheduler.addTimeTask(update, 0, 1 / 60);
-		System.notifyOnFrames(render);
 	}
 
 	private function debugBeatDetection() {
 		// sampleSound = Assets.sounds.KingOfTheDesert;
-		// sampleSound = Assets.sounds.bpm83;
-		sampleSound = Assets.sounds.bpm120;
+		sampleSound = Assets.sounds.bpm83;
+		// sampleSound = Assets.sounds.bpm120;
 		// sampleSound = Assets.sounds.bpm204;
 
 		if (sampleSound != null && sampleSound.uncompressedData != null) {
 			trace("Using Sound asset.");
-			beatDetection = new BeatDetection(sampleSound.uncompressedData);
+			beatDetection = new BeatDetection(sampleSound.uncompressedData, 48000);
 		}
 		else {
 			var sampleBlob = Assets.blobs.KingOfTheDesert_ogg_blob;
 			if (sampleBlob != null) {
 				trace("Using Blob asset.");
 				sampleBytes = sampleBlob.toBytes();
-				beatDetection = new BeatDetection(uncompressOggBytes(sampleBytes));
+				beatDetection = new BeatDetection(uncompressOggBytes(sampleBytes), 48000);
 			}
 			else {
 				trace("Using dummie data.");
 				var data = new Float32Array(20 * 44100);
-				beatDetection = new BeatDetection(data);
+				beatDetection = new BeatDetection(data, 44100);
 			}
 			
 		}
@@ -171,11 +170,13 @@ class Project {
 		var g = frames[0].g4;
 		g.begin();
 		g.clear(Color.Black);
-		g.setPipeline(pipeline);
-		g.setFloat(distLoc, beatDist);
-		g.setVertexBuffer(vertices);
-		g.setIndexBuffer(indices);
-		g.drawIndexedVertices();
+		// g.setPipeline(pipeline);
+		// g.setFloat(distLoc, beatDist);
+		// g.setVertexBuffer(vertices);
+		// g.setIndexBuffer(indices);
+		// g.drawIndexedVertices();
 		g.end();
+
+		beatDetection.graph.render(frames[0]);
 	}
 }

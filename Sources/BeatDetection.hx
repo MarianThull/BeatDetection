@@ -2,44 +2,69 @@ package;
 
 import FFT;
 import Filter;
-import ComplexArray;
+import FastComplexArray;
+import Graph;
 import kha.Assets;
 import kha.Sound;
 import kha.Scheduler;
 
 class BeatDetection {
 	private var bpm: Float;
+	public var graph: Graph;
+	private var graphAreas = [[0, 0, 640, 360], [0, 360, 640, 360], [640, 0, 640, 360], [640, 360, 640, 360]];
+	private var displayedBand = 2;
+
 	private var data: Array<Float>;
-	private var samplerate = 44100;
-	private var samplesizeSeconds = 2.2;
+	private var samplerate = 4096;
+	private var originalSamplerate = 48000;
+	private var samplesizeSeconds = 4.0;
 	private var sampleSize: Int;
 	private var bandLimits = [0, 200, 400, 800, 1600, 3200];
-	private var minBPM: Float = 60;
-	private var maxBPM: Float = 240;
-	private var accuracies = [2]; // [2, 0.5, 0.1, 0.01];
+	private var minBPM: Float = 60; // 60;
+	private var maxBPM: Float = 240; // 240;
+	private var accuracies = [2, 0.5]; // [2, 0.5, 0.1, 0.01];
 
 	private static var DEBUG = true;
 	private static var time0 = 0.0;
 	private static var ffts0 = 0;
 
-	public function new(data:kha.arrays.Float32Array): Void {
+	public function new(data:kha.arrays.Float32Array, samplerate:Int): Void {
+		this.originalSamplerate = samplerate;
 		this.data = new Array<Float>();
 		for (f in data) {
 			this.data.push(f);
 		}
-		sampleSize = Math.floor(Math.pow(2, Math.ceil(Math.log(samplesizeSeconds * samplerate) / Math.log(2))));
-		debug('sample size: $sampleSize');
+		graph = new Graph();
+
 		if (DEBUG) time0 = Scheduler.realTime();
+
 		var sample = getSample();
 		debug(timer("extract sample"));
+		var subData = sample.getReal().copy();
+		graph.add_subgraph(new Graph.Subgraph(subData, graphAreas[0][0], graphAreas[0][1],
+			graphAreas[0][2], graphAreas[0][3], 1.1));
+
 		var bands = filterbank(sample);
 		debug(timer("filterbank"));
+		subData = bands[displayedBand].getReal().copy();
+		graph.add_subgraph(new Graph.Subgraph(subData, graphAreas[1][0], graphAreas[1][1],
+			graphAreas[1][2], graphAreas[1][3], 1.1));
+
 		smoothing(bands);
 		debug(timer("smoothing"));
+		subData = bands[displayedBand].getReal().copy();
+		graph.add_subgraph(new Graph.Subgraph(subData, graphAreas[2][0], graphAreas[2][1],
+			graphAreas[2][2], graphAreas[2][3], 1.1));
+
 		differentiate(bands);
 		debug(timer("differentiate"));
+		subData = bands[displayedBand].getReal().copy();
+		graph.add_subgraph(new Graph.Subgraph(subData, graphAreas[3][0], graphAreas[3][1],
+			graphAreas[3][2], graphAreas[3][3], 1.1));
+
 		bpm = combFilter(bands);
 		debug(timer("comb filter"));
+
 		debug('found bpm: $bpm');
 		return;
 	}
@@ -62,17 +87,25 @@ class BeatDetection {
 	}
 
 	private function getSample(): FastComplexArray {
+		sampleSize = Math.floor(Math.pow(2, Math.ceil(Math.log(samplesizeSeconds * samplerate) / Math.log(2))));
+		debug('sample size: $sampleSize');
+		var sampleSizeOriginal = sampleSize * originalSamplerate / samplerate;
+		var step:Float = 2 * originalSamplerate / samplerate;  // 2 for stereo
+
 		if (data != null) {
 			var left = new Array<Float>();
 			var right = new Array<Float>();
 
 			var l = data.length;
 			debug('file length: $l');
-			var start_i = Math.floor(l / 2) - sampleSize; // half sampleSize but x2 for stereo
-			for (i in start_i...(start_i + sampleSize)) {
-				left.push(data[i]);
-				right.push(data[i + 1]);
-				i += 2;
+			var start_i = Math.floor(l / 2 - sampleSizeOriginal); // half sampleSize but x2 for stereo
+			var i = 0;
+			var i_inFile: Int;
+			while (left.length < sampleSize) {
+				i_inFile = Math.floor((start_i + i * step) * 0.5) * 2;  // .5 and 2 to align for left and right channel
+				left.push(data[i_inFile]);
+				right.push(data[i_inFile + 1]);
+				i += 1;
 			}
 
 			return new FastComplexArray(left, right);
