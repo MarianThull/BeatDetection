@@ -1,12 +1,10 @@
 package;
 
-import kha.FastFloat;
-
 class FastComplex {
-	public var re: FastFloat;
-	public var im: FastFloat;
+	public var re: Float;
+	public var im: Float;
 
-	public function new(re:FastFloat, im:FastFloat) {
+	public function new(re:Float, im:Float) {
 		this.re = re;
 		this.im = im;
 	}

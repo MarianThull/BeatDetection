@@ -6,11 +6,10 @@ import ComplexArray;
 import kha.Assets;
 import kha.Sound;
 import kha.Scheduler;
-import kha.arrays.Float32Array;
 
 class BeatDetection {
 	private var bpm: Float;
-	private var data: Float32Array;
+	private var data: Array<Float>;
 	private var samplerate = 44100;
 	private var samplesizeSeconds = 2.2;
 	private var sampleSize: Int;
@@ -23,8 +22,11 @@ class BeatDetection {
 	private static var time0 = 0.0;
 	private static var ffts0 = 0;
 
-	public function new(data:Float32Array): Void {
-		this.data = data;
+	public function new(data:kha.arrays.Float32Array): Void {
+		this.data = new Array<Float>();
+		for (f in data) {
+			this.data.push(f);
+		}
 		sampleSize = Math.floor(Math.pow(2, Math.ceil(Math.log(samplesizeSeconds * samplerate) / Math.log(2))));
 		debug('sample size: $sampleSize');
 		if (DEBUG) time0 = Scheduler.realTime();
@@ -61,18 +63,16 @@ class BeatDetection {
 
 	private function getSample(): FastComplexArray {
 		if (data != null) {
-			var left = new Float32Array(sampleSize);
-			var right = new Float32Array(sampleSize);
+			var left = new Array<Float>();
+			var right = new Array<Float>();
 
 			var l = data.length;
 			debug('file length: $l');
 			var start_i = Math.floor(l / 2) - sampleSize; // half sampleSize but x2 for stereo
-			var n = 0;
 			for (i in start_i...(start_i + sampleSize)) {
-				left[n] = data[i];
-				right[n] = data[i + 1];
+				left.push(data[i]);
+				right.push(data[i + 1]);
 				i += 2;
-				n += 1;
 			}
 
 			return new FastComplexArray(left, right);

@@ -78,7 +78,11 @@ class Project {
 	}
 
 	private function debugBeatDetection() {
-		sampleSound = Assets.sounds.KingOfTheDesert;
+		// sampleSound = Assets.sounds.KingOfTheDesert;
+		// sampleSound = Assets.sounds.bpm83;
+		sampleSound = Assets.sounds.bpm120;
+		// sampleSound = Assets.sounds.bpm204;
+
 		if (sampleSound != null && sampleSound.uncompressedData != null) {
 			trace("Using Sound asset.");
 			beatDetection = new BeatDetection(sampleSound.uncompressedData);
@@ -101,9 +105,9 @@ class Project {
 
 	private static function debugffts(): Void {
 		// test fft
-		var testData = new Float32Array(8);
+		var testData = new Array<Float>();
 		for (i in 0...8) {
-			testData[i] = (i == 1 ? 1.0 : 0.0);
+			testData.push(i == 1 ? 1.0 : 0.0);
 		}
 		var t0 = Scheduler.realTime();
 		FFT.realfft(testData, false);
@@ -118,10 +122,7 @@ class Project {
 		for (i in 0...testData.length) {
 			testData[i] = new FastComplex((i % 2) * 10.0, ((i + 1) % 2) * 10.0);
 		}
-		var example = new Float32Array(3);
-		example[0] = 0.5;
-		example[1] = 1.0;
-		example[2] = 0.5;
+		var example = [0.5, 1.0, 0.5];
 		var kernel = Kernel.fromReal(example, true);
 		var kernel2 = Kernel.hann_window_right(0.4);
 		var filter = new Filter(kernel);

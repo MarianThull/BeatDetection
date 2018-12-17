@@ -2,7 +2,6 @@ package;
 
 import FastComplex;
 import FastComplexArray;
-import kha.arrays.Float32Array;
 
 class FFT {
 	public static var timesCalled = 0;
@@ -68,17 +67,17 @@ class FFT {
 		fft(data, true);
 	}
 
-	public static function realfft(reData:Float32Array, inverse:Bool = false): Float32Array {
-		var im = new Float32Array(reData.length);
+	public static function realfft(reData:Array<Float>, inverse:Bool = false): Array<Float> {
+		var im = new Array<Float>();
 		for (i in 0...reData.length) {
-			im[i] = 0;
+			im.push(0);
 		}
 		var data = new FastComplexArray(reData, im);
 		fft(data, inverse);
 		return data.getReal();
 	}
 
-	public static function realifft(reData:Float32Array): Float32Array {
+	public static function realifft(reData:Array<Float>): Array<Float> {
 		return realfft(reData, true);
 	}
 }

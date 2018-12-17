@@ -3,7 +3,6 @@ package;
 import FastComplex;
 import FastComplexArray;
 import FFT;
-import kha.arrays.Float32Array;
 
 class Filter {
 	private var kernel: Kernel;
@@ -51,18 +50,18 @@ abstract Kernel(FastComplexArray) from FastComplexArray to FastComplexArray {
 		this = k;
 	}
 
-	public static function fromReal(k: Float32Array, normalize=false) {
+	public static function fromReal(k: Array<Float>, normalize=false) {
 		if (normalize) {
 			normalizeReal(k);
 		}
-		var k_copy = new Float32Array(k.length);
+		var k_copy = new Array<Float>();
 		for (i in 0...k.length) {
-			k_copy[i] = k[i];
+			k_copy.push(k[i]);
 		}
 		return new Kernel(new FastComplexArray(k, k_copy));
 	}
 
-	public static function normalizeReal(data: Float32Array) {
+	public static function normalizeReal(data: Array<Float>) {
 		var s = 0.0;
 		for (i in 0...data.length) {
 			s += data[i];
@@ -98,10 +97,15 @@ abstract Kernel(FastComplexArray) from FastComplexArray to FastComplexArray {
 
 	public static function comb_kernel(bpm:Float, samplerate:Int, pulses:Int=3): Kernel {
 		var step = Math.floor(60 * samplerate / bpm);
-		var k = new Float32Array(step * pulses);
+		var k = new Array<Float>();
 
-		for (i in 0...pulses) {
-			k[i * step] = 1;
+		for (i in 0...step * pulses) {
+			if (i % step == 0) {
+				k.push(1);
+			}
+			else {
+				k.push(0);
+			}
 		}
 
 		return Kernel.fromReal(k);

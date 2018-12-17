@@ -1,29 +1,27 @@
 package;
 
 import FastComplex;
-import kha.arrays.Float32Array;
-import kha.FastFloat;
 
 
-abstract FastComplexArray(Array<Float32Array>) {
+abstract FastComplexArray(Array<Array<Float>>) {
 	public var length(get, never): Int;
 
 	public inline function get_length(): Int {
 		return this[0].length;
 	} 
 
-	public inline function new(re:Float32Array, im:Float32Array) {
-		this = new Array<Float32Array>();
+	public inline function new(re:Array<Float>, im:Array<Float>) {
+		this = new Array<Array<Float>>();
 		this.push(re);
 		this.push(im);
 	}
 
 	public static function zeros(size:Int) {
-		var real = new Float32Array(size);
-		var imag = new Float32Array(size);
+		var real = new Array<Float>();
+		var imag = new Array<Float>();
 		for (i in 0...size) {
-			real[i] = 0;
-			imag[i] = 0;
+			real.push(0);
+			imag.push(0);
 		}
 		return new FastComplexArray(real, imag);
 	}
@@ -47,20 +45,20 @@ abstract FastComplexArray(Array<Float32Array>) {
 		return c;
 	}
 
-	public inline function getReal(): Float32Array {
+	public inline function getReal(): Array<Float> {
 		return this[0];
 	}
 
-	public inline function getImaginary(): Float32Array {
+	public inline function getImaginary(): Array<Float> {
 		return this[1];
 	}
 
 	public inline function clone() {
-		var re_new = new Float32Array(length);
-		var im_new = new Float32Array(length);
+		var re_new = new Array<Float>();
+		var im_new = new Array<Float>();
 		for (i in 0...length) {
-			re_new[i] = this[0][i];
-			im_new[i] = this[1][i];
+			re_new.push(this[0][i]);
+			im_new.push(this[1][i]);
 		}
 		return new FastComplexArray(re_new, im_new);
 	}
@@ -84,8 +82,8 @@ abstract FastComplexArray(Array<Float32Array>) {
 	public inline function diff_rect() {
 		// differentiate and half wave rectify in one step
 		var result = zeros(length);
-		var delta_re: FastFloat;
-		var delta_im: FastFloat;
+		var delta_re: Float;
+		var delta_im: Float;
 		for (i in 1...length) {
 			delta_re = this[0][i] - this[0][i - 1];
 			delta_im = this[1][i] - this[1][i - 1];
