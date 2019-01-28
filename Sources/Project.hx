@@ -31,11 +31,14 @@ class Project {
 	private var vertices: VertexBuffer;
 	private var indices: IndexBuffer;
 	private var beatDist = 0.0;
-	private var maxBeatDist = 0.5;
+	private var maxBeatDist = 0.2;
+	private var screenDelay = 0.0;
 	private var distLoc: ConstantLocation;
 	private var sampleSound: Sound;
 	private var sampleBytes: Bytes;
 	private var beatDetection: BeatDetection;
+	private var audioChannel: kha.audio1.AudioChannel;
+	private var sampleRate = 44100;
 	
 	public function new(): Void {
 		var structure = new VertexStructure();
@@ -73,32 +76,29 @@ class Project {
 
 			Scheduler.addTimeTask(update, 0, 1 / 60);
 			System.notifyOnFrames(render);
+
+			audioChannel = kha.audio2.Audio1.play(sampleSound);
 		});
 	}
 
 	private function debugBeatDetection() {
-		// sampleSound = Assets.sounds.KingOfTheDesert;
-		sampleSound = Assets.sounds.bpm83;
-		// sampleSound = Assets.sounds.bpm120;
-		// sampleSound = Assets.sounds.bpm204;
+		//sampleSound = Assets.sounds.KingOfTheDesert; // 134.00
+		sampleSound = Assets.sounds.bpm83; // 82.95
+		//sampleSound = Assets.sounds.bpm120; // 120.01
+		//sampleSound = Assets.sounds.bpm204; // 102.01
+		//sampleSound = Assets.sounds.War; // 137.01
+		//sampleSound = Assets.sounds.LeeRosevere_ImGoingForACoffee; // 89.02 // by Lee Rosevere (https://creativecommons.org/licenses/by/4.0/)
+		var bpm_override = 0;//82.95;
 
 		if (sampleSound != null && sampleSound.uncompressedData != null) {
 			trace("Using Sound asset.");
-			beatDetection = new BeatDetection(sampleSound.uncompressedData, 48000);
+			beatDetection = new BeatDetection(sampleSound.uncompressedData, sampleRate, bpm_override);
 		}
+		
 		else {
-			var sampleBlob = Assets.blobs.KingOfTheDesert_ogg_blob;
-			if (sampleBlob != null) {
-				trace("Using Blob asset.");
-				sampleBytes = sampleBlob.toBytes();
-				beatDetection = new BeatDetection(uncompressOggBytes(sampleBytes), 48000);
-			}
-			else {
-				trace("Using dummie data.");
-				var data = new Float32Array(20 * 44100);
-				beatDetection = new BeatDetection(data, 44100);
-			}
-			
+			trace("Using dummie data.");
+			var data = new Float32Array(20 * 44100);
+			beatDetection = new BeatDetection(data, 44100, bpm_override);
 		}
 	}
 
@@ -156,8 +156,10 @@ class Project {
 	}
 
 	private function update(): Void {
-		var time = Scheduler.realTime();
-		beatDist = 1.0 - Math.sin(5 * time);
+		//var time = Scheduler.realTime();
+		// beatDist = 1.0 - Math.sin(5 * time);
+		var time = audioChannel.position - screenDelay;
+		beatDist = Math.abs(beatDetection.getBeatDist(time));
 		if (beatDist > maxBeatDist) {
 			beatDist = 1.0;
 		}

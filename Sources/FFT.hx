@@ -67,7 +67,7 @@ class FFT {
 		fft(data, true);
 	}
 
-	public static function realfft(reData:Array<Float>, inverse:Bool = false): Array<Float> {
+	public static function realfft(reData:Array<Float>, inverse:Bool = false) {
 		var im = new Array<Float>();
 		for (i in 0...reData.length) {
 			im.push(0);
@@ -77,7 +77,7 @@ class FFT {
 		return data.getReal();
 	}
 
-	public static function realifft(reData:Array<Float>): Array<Float> {
+	public static function realifft(reData:Array<Float>) {
 		return realfft(reData, true);
 	}
 }

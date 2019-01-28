@@ -63,6 +63,16 @@ abstract FastComplexArray(Array<Array<Float>>) {
 		return new FastComplexArray(re_new, im_new);
 	}
 
+	public inline function slice(start:Int, stop:Int) {
+		var re_new = new Array<Float>();
+		var im_new = new Array<Float>();
+		for (i in start...stop) {
+			re_new.push(this[0][i]);
+			im_new.push(this[1][i]);
+		}
+		return new FastComplexArray(re_new, im_new);
+	}
+
 	public inline function multElemWise(other:FastComplexArray) {
 		var other_i: FastComplex;
 		for (i in 0...length) {

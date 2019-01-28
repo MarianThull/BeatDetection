@@ -32,7 +32,7 @@ class Filter {
 		freq_data.multElemWise(kernel_spectrum);
 	}
 
-	public static function hann_window_right(win_length:Float, max_freq:Int = 44100): Filter {
+	public static function hann_window_right(win_length:Float, max_freq:Int = 4096): Filter {
 		var kernel = Kernel.hann_window_right(win_length, max_freq);
 		return new Filter(kernel);
 	}
@@ -85,14 +85,14 @@ abstract Kernel(FastComplexArray) from FastComplexArray to FastComplexArray {
 		return padded;
 	}
 
-	public static function hann_window_right(win_length:Float, max_freq:Int = 44100): Kernel {
-		var hann_length = Math.ceil(win_length * max_freq); // for sampling theorem
-		var hann = FastComplexArray.zeros(hann_length);
+	public static function hann_window_right(win_length:Float, max_freq:Int = 4096): Kernel {
+		var hann_length = Math.ceil(win_length * max_freq);
+		var hann = new Array<Float>();
 		for (i in 0...hann_length) {
 			var h = Math.pow(Math.cos(i * Math.PI / (hann_length * 2)), 2);
-			hann[i] = new FastComplex(h, h);
+			hann.push(h);
 		}
-		return hann;
+		return Kernel.fromReal(hann);
 	}
 
 	public static function comb_kernel(bpm:Float, samplerate:Int, pulses:Int=3): Kernel {
