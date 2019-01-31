@@ -32,13 +32,17 @@ class Project {
 	private var indices: IndexBuffer;
 	private var beatDist = 0.0;
 	private var maxBeatDist = 0.2;
-	private var screenDelay = 0.0;
+	private var soundLag = 0.0;
 	private var distLoc: ConstantLocation;
 	private var sampleSound: Sound;
 	private var sampleBytes: Bytes;
 	private var beatDetection: BeatDetection;
 	private var audioChannel: kha.audio1.AudioChannel;
 	private var sampleRate = 44100;
+	// used to stay in sync with playback
+	private var previousFrameTime:Float;
+	private var lastReportedPlayheadPosition:Float;
+	private var songTime:Float;
 	
 	public function new(): Void {
 		var structure = new VertexStructure();
@@ -77,28 +81,40 @@ class Project {
 			Scheduler.addTimeTask(update, 0, 1 / 60);
 			System.notifyOnFrames(render);
 
-			audioChannel = kha.audio2.Audio1.play(sampleSound);
+			startSong();
 		});
 	}
 
 	private function debugBeatDetection() {
-		//sampleSound = Assets.sounds.KingOfTheDesert; // 134.00
-		sampleSound = Assets.sounds.bpm83; // 82.95
-		//sampleSound = Assets.sounds.bpm120; // 120.01
-		//sampleSound = Assets.sounds.bpm204; // 102.01
-		//sampleSound = Assets.sounds.War; // 137.01
-		//sampleSound = Assets.sounds.LeeRosevere_ImGoingForACoffee; // 89.02 // by Lee Rosevere (https://creativecommons.org/licenses/by/4.0/)
-		var bpm_override = 0;//82.95;
+		// sampleSound = Assets.sounds.KingOfTheDesert;
+		// var bpm_override = 134.0;
+
+		sampleSound = Assets.sounds.bpm83; // bpm: 82.95, offset: 0.025
+		var bpm_override = 82.99;
+		var offset_override = 0.027;
+
+		// sampleSound = Assets.sounds.bpm120;
+		// var bpm_override = 120.01;
+
+		// sampleSound = Assets.sounds.bpm204;
+		// var bpm_override = 102.01;
+
+		// sampleSound = Assets.sounds.War; // 137.01
+		// var bpm_override = 137.01;
+		
+		// sampleSound = Assets.sounds.LeeRosevere_ImGoingForACoffee;  // by Lee Rosevere (https://creativecommons.org/licenses/by/4.0/)
+		// var bpm_override = 89.02;
+		// var offset_override = 0.81;
 
 		if (sampleSound != null && sampleSound.uncompressedData != null) {
 			trace("Using Sound asset.");
-			beatDetection = new BeatDetection(sampleSound.uncompressedData, sampleRate, bpm_override);
+			beatDetection = new BeatDetection(sampleSound.uncompressedData, sampleRate, bpm_override, offset_override);
 		}
 		
 		else {
 			trace("Using dummie data.");
 			var data = new Float32Array(20 * 44100);
-			beatDetection = new BeatDetection(data, 44100, bpm_override);
+			beatDetection = new BeatDetection(data, 44100, bpm_override, offset_override);
 		}
 	}
 
@@ -155,11 +171,24 @@ class Project {
 		return uncompressedData;
 	}
 
+	private function startSong() {
+		previousFrameTime = Scheduler.realTime();
+		lastReportedPlayheadPosition = 0;
+		songTime = 0;
+		audioChannel = kha.audio2.Audio1.play(sampleSound);		
+	}
+
 	private function update(): Void {
-		//var time = Scheduler.realTime();
-		// beatDist = 1.0 - Math.sin(5 * time);
-		var time = audioChannel.position - screenDelay;
-		beatDist = Math.abs(beatDetection.getBeatDist(time));
+		var now = Scheduler.realTime();
+		var pos = audioChannel.position;
+		songTime += now - previousFrameTime;
+		previousFrameTime = now;
+		if (pos != lastReportedPlayheadPosition) {
+			songTime = (songTime + pos) / 2;
+			lastReportedPlayheadPosition = pos;
+		}
+
+		beatDist = Math.abs(beatDetection.getBeatDist(songTime - soundLag));
 		if (beatDist > maxBeatDist) {
 			beatDist = 1.0;
 		}
@@ -172,13 +201,13 @@ class Project {
 		var g = frames[0].g4;
 		g.begin();
 		g.clear(Color.Black);
-		// g.setPipeline(pipeline);
-		// g.setFloat(distLoc, beatDist);
-		// g.setVertexBuffer(vertices);
-		// g.setIndexBuffer(indices);
-		// g.drawIndexedVertices();
+		g.setPipeline(pipeline);
+		g.setFloat(distLoc, beatDist);
+		g.setVertexBuffer(vertices);
+		g.setIndexBuffer(indices);
+		g.drawIndexedVertices();
 		g.end();
 
-		beatDetection.graph.render(frames[0]);
+		// beatDetection.graph.render(frames[0]);
 	}
 }

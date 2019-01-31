@@ -31,7 +31,7 @@ class BeatDetection {
 	private static var time0 = 0.0;
 	private static var ffts0 = 0;
 
-	public function new(data:kha.arrays.Float32Array, samplerate:Int, bpm_override:Float=0): Void {
+	public function new(data:kha.arrays.Float32Array, samplerate:Int, bpm_override:Float=0, offset_override:Float=0): Void {
 		this.originalSamplerate = samplerate;
 		this.data = new Array<Float>();
 		for (f in data) {
@@ -53,18 +53,6 @@ class BeatDetection {
 		graph.add_subgraph(new Graph.Subgraph(subData, graphAreas[1][0], graphAreas[1][1],
 			graphAreas[1][2], graphAreas[1][3], 1.1));
 
-		smoothing(bands);
-		debug(timer("smoothing"));
-		subData = bands[displayedBand].getReal().copy();
-		graph.add_subgraph(new Graph.Subgraph(subData, graphAreas[2][0], graphAreas[2][1],
-			graphAreas[2][2], graphAreas[2][3], 1.1));
-
-		differentiate(bands);
-		debug(timer("differentiate"));
-		subData = bands[displayedBand].getReal().copy();
-		graph.add_subgraph(new Graph.Subgraph(subData, graphAreas[3][0], graphAreas[3][1],
-			graphAreas[3][2], graphAreas[3][3], 1.1));
-
 		if (bpm_override != 0) {
 			bpm = bpm_override;
 			debug('Predefined bpm: $bpm');
@@ -74,16 +62,39 @@ class BeatDetection {
 			for (band in bands) {
 				bands_copy.push(band.clone());
 			}
+
+			smoothing(bands_copy);
+			debug(timer("smoothing"));
+			subData = bands_copy[displayedBand].getReal().copy();
+			graph.add_subgraph(new Graph.Subgraph(subData, graphAreas[2][0], graphAreas[2][1],
+				graphAreas[2][2], graphAreas[2][3], 1.1));
+
+			differentiate(bands_copy);
+			debug(timer("differentiate"));
+			subData = bands_copy[displayedBand].getReal().copy();
+			graph.add_subgraph(new Graph.Subgraph(subData, graphAreas[3][0], graphAreas[3][1],
+				graphAreas[3][2], graphAreas[3][3], 1.1));
+
 			bpm = combFilter(bands_copy);
 			debug(timer("comb filter"));
 		}
+
 		beat_length = 60.0 / bpm;
 		
-		offset_seconds = phaseAlign(bands);
-		debug(timer("phase alignment"));
+		if (offset_override != 0) {
+			offset_seconds = offset_override;
+			debug('Predefined offset: $offset_seconds');
+		}
+		else {
+			differentiate(bands);
+			debug(timer("differentiate (phase alignment)"));
 
-		debug('found bpm: $bpm');
-		debug('seconds to first beat: $offset_seconds');
+			offset_seconds = phaseAlign(bands);
+			debug(timer("phase alignment"));
+		}
+
+		debug('BPM: $bpm');
+		debug('TIME TO FIRST BEAT: $offset_seconds');
 		return;
 	}
 
